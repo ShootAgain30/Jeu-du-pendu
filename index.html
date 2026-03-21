@@ -336,6 +336,25 @@ musicBtn.onclick = () => {
   }
 };
 document.body.appendChild(musicBtn);
+  const nextBtn = document.createElement('button');
+nextBtn.textContent = '⏭ Next';
+nextBtn.style.cssText = `
+  position: fixed; bottom: 56px; right: 16px;
+  background: rgba(232,255,71,0.1);
+  border: 1px solid rgba(232,255,71,0.4);
+  color: #e8ff47;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.1em;
+  padding: 8px 14px; border-radius: 100px;
+  cursor: pointer; z-index: 99;
+  transition: all 0.2s;
+`;
+nextBtn.onclick = () => {
+  trackIndex = (trackIndex + 1) % tracks.length;
+  audio.src = tracks[trackIndex];
+  if (musicOn) audio.play();
+};
+document.body.appendChild(nextBtn);
 newGame();
 </script>
 </body>
