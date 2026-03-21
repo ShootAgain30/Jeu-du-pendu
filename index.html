@@ -304,7 +304,9 @@ const audio = new Audio(tracks[trackIndex]);
 audio.addEventListener('ended', () => {
   trackIndex = (trackIndex + 1) % tracks.length;
   audio.src = tracks[trackIndex];
-  audio.play();
+  audio.load();
+  audio.play().catch(() => {
+    audio.play();
 });
 audio.loop = true;
 audio.addEventListener('ended', () => {
