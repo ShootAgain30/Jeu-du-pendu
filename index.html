@@ -198,27 +198,28 @@ const WORDS = [
   { word: "CHATEAU",    cat: "Architecture",  hint: "Résidence médiévale fortifiée" },
   { word: "DRAGON",     cat: "Fantastique",   hint: "Crache du feu et vole" },
   { word: "GIRAFE",     cat: "Animaux",       hint: "A le cou le plus long" },
-  { word: "LICORNE",     cat: "Fantastique",  hint: "Cheval avec une corne magique" },
-{ word: "PIZZA",       cat: "Nourriture",   hint: "Spécialité italienne ronde" },
-{ word: "DAUPHIN",     cat: "Animaux",      hint: "Mammifère marin très intelligent" },
-{ word: "CACTUS",      cat: "Nature",       hint: "Plante du désert avec des épines" },
-{ word: "ASTRONAUTE",  cat: "Espace",       hint: "Voyage dans les étoiles" },
-{ word: "BOULANGER",   cat: "Métiers",      hint: "Fabrique le pain chaque matin" },
-{ word: "CASCADE",     cat: "Nature",       hint: "Chute d'eau naturelle" },
-{ word: "DETECTIVE",   cat: "Métiers",      hint: "Résout les mystères et enquêtes" },
-{ word: "ECUREUIL",    cat: "Animaux",      hint: "Grimpe aux arbres et mange des noisettes" },
-{ word: "FANTOME",     cat: "Fantastique",  hint: "Esprit invisible qui hante les maisons" },
-{ word: "GALAXIE",     cat: "Espace",       hint: "Immense groupe d'étoiles" },
-{ word: "HIBOU",       cat: "Animaux",      hint: "Oiseau nocturne qui fait ouhou" },
-{ word: "IGLOO",       cat: "Architecture", hint: "Maison de glace des Inuits" },
-{ word: "JONGLEUR",    cat: "Spectacle",    hint: "Lance des balles en l'air" },
-{ word: "KOALA",       cat: "Animaux",      hint: "Mange des feuilles d'eucalyptus" },
-{ word: "LAGON",       cat: "Nature",       hint: "Mer calme entourée de coraux" },
-{ word: "MEDUSE",      cat: "Animaux",      hint: "Créature transparente des océans" },
-{ word: "NAUFRAGE",    cat: "Aventure",     hint: "Bateau coulé au fond de la mer" },
-{ word: "OURAGAN",     cat: "Météo",        hint: "Tempête tropicale très violente" },
-{ word: "PINGOUIN",    cat: "Animaux",      hint: "Oiseau noir et blanc qui ne vole pas" },
+  { word: "LICORNE",    cat: "Fantastique",   hint: "Cheval avec une corne magique" },
+  { word: "PIZZA",      cat: "Nourriture",    hint: "Spécialité italienne ronde" },
+  { word: "DAUPHIN",    cat: "Animaux",       hint: "Mammifère marin très intelligent" },
+  { word: "CACTUS",     cat: "Nature",        hint: "Plante du désert avec des épines" },
+  { word: "ASTRONAUTE", cat: "Espace",        hint: "Voyage dans les étoiles" },
+  { word: "BOULANGER",  cat: "Métiers",       hint: "Fabrique le pain chaque matin" },
+  { word: "CASCADE",    cat: "Nature",        hint: "Chute d'eau naturelle" },
+  { word: "DETECTIVE",  cat: "Métiers",       hint: "Résout les mystères et enquêtes" },
+  { word: "ECUREUIL",   cat: "Animaux",       hint: "Grimpe aux arbres et mange des noisettes" },
+  { word: "FANTOME",    cat: "Fantastique",   hint: "Esprit invisible qui hante les maisons" },
+  { word: "GALAXIE",    cat: "Espace",        hint: "Immense groupe d'étoiles" },
+  { word: "HIBOU",      cat: "Animaux",       hint: "Oiseau nocturne qui fait ouhou" },
+  { word: "IGLOO",      cat: "Architecture",  hint: "Maison de glace des Inuits" },
+  { word: "JONGLEUR",   cat: "Spectacle",     hint: "Lance des balles en l'air" },
+  { word: "KOALA",      cat: "Animaux",       hint: "Mange des feuilles d'eucalyptus" },
+  { word: "LAGON",      cat: "Nature",        hint: "Mer calme entourée de coraux" },
+  { word: "MEDUSE",     cat: "Animaux",       hint: "Créature transparente des océans" },
+  { word: "NAUFRAGE",   cat: "Aventure",      hint: "Bateau coulé au fond de la mer" },
+  { word: "OURAGAN",    cat: "Météo",         hint: "Tempête tropicale très violente" },
+  { word: "PINGOUIN",   cat: "Animaux",       hint: "Oiseau noir et blanc qui ne vole pas" },
 ];
+
 const KEYBOARD_ROWS = [
   ['A','Z','E','R','T','Y','U','I','O','P'],
   ['Q','S','D','F','G','H','J','K','L','M'],
@@ -251,7 +252,9 @@ function showOverlay(won) {
   const title = document.getElementById('overlay-title');
   title.textContent = won ? 'BRAVO !' : 'PERDU !';
   title.className = 'overlay-title ' + (won ? 'win' : 'lose');
-  document.getElementById('overlay-word').innerHTML = won ? `Score : <span>+${Math.max(10, 50 - state.errors * 8)} pts</span>` : `Le mot était : <span>${state.word}</span>`;
+  document.getElementById('overlay-word').innerHTML = won
+    ? `Score : <span>+${Math.max(10, 50 - state.errors * 8)} pts</span>`
+    : `Le mot était : <span>${state.word}</span>`;
   document.getElementById('overlay').classList.remove('hidden');
 }
 
@@ -259,7 +262,9 @@ function render() {
   document.getElementById('category-label').textContent = state.category;
   document.getElementById('score').textContent = state.score;
   document.getElementById('hint-row').textContent = state.errors >= 2 ? `💡 ${state.hint}` : '';
-  BODY_PARTS.forEach((id, i) => { document.getElementById(id).style.opacity = state.errors > i ? '1' : '0'; });
+  BODY_PARTS.forEach((id, i) => {
+    document.getElementById(id).style.opacity = state.errors > i ? '1' : '0';
+  });
   const bar = document.getElementById('attempts-bar');
   bar.innerHTML = '';
   for (let i = 0; i < MAX_ERRORS; i++) {
@@ -279,41 +284,64 @@ function render() {
     line.className = 'letter-line' + (state.guessed.has(letter) ? ' revealed' : '');
     slot.appendChild(char); slot.appendChild(line); wordDiv.appendChild(slot);
   });
-  const kb = document.getElementById('keyboard'); kb.innerHTML = '';
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
   KEYBOARD_ROWS.forEach(row => {
     const rowDiv = document.createElement('div'); rowDiv.className = 'key-row';
     row.forEach(letter => {
       const btn = document.createElement('button'); btn.className = 'key'; btn.textContent = letter;
-      if (state.guessed.has(letter)) { btn.classList.add(state.word.includes(letter) ? 'correct' : 'wrong'); btn.disabled = true; }
-      else if (state.gameOver) { btn.disabled = true; }
-      else { btn.onclick = () => guess(letter); }
+      if (state.guessed.has(letter)) {
+        btn.classList.add(state.word.includes(letter) ? 'correct' : 'wrong');
+        btn.disabled = true;
+      } else if (state.gameOver) {
+        btn.disabled = true;
+      } else {
+        btn.onclick = () => guess(letter);
+      }
       rowDiv.appendChild(btn);
     });
     kb.appendChild(rowDiv);
   });
 }
 
-document.addEventListener('keydown', e => { const l = e.key.toUpperCase(); if (/^[A-Z]$/.test(l) && !state.gameOver) guess(l); });
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
-document.getElementById('install-btn').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; };
+document.addEventListener('keydown', e => {
+  const l = e.key.toUpperCase();
+  if (/^[A-Z]$/.test(l) && !state.gameOver) guess(l);
+});
 
-  const tracks = ['Foyer.mp3', 'K2000.mp3'];
+// ─── PWA Install ───────────────────────────────────────────────
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.remove('hidden');
+});
+document.getElementById('install-btn').onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden');
+  deferredPrompt = null;
+};
+
+// ─── Audio ─────────────────────────────────────────────────────
+const tracks = ['Foyer.mp3', 'K2000.mp3'];
 let trackIndex = 0;
+let musicOn = false; // ✅ variable déclarée
+
 const audio = new Audio(tracks[trackIndex]);
+
+// ✅ Un seul listener 'ended' : passe à la piste suivante
 audio.addEventListener('ended', () => {
   trackIndex = (trackIndex + 1) % tracks.length;
   audio.src = tracks[trackIndex];
   audio.load();
-  audio.play().catch(() => {
-    audio.play();
-});
-audio.loop = true;
-audio.addEventListener('ended', () => {
-  audio.currentTime = 0;
-  audio.play();
+  if (musicOn) {
+    audio.play().catch(err => console.warn('Lecture impossible :', err));
+  }
 });
 
+// ✅ Bouton Musique
 const musicBtn = document.createElement('button');
 musicBtn.textContent = '🎵 Musique';
 musicBtn.style.cssText = `
@@ -328,17 +356,21 @@ musicBtn.style.cssText = `
 `;
 musicBtn.onclick = () => {
   if (audio.paused) {
-    audio.play();
+    audio.play().catch(err => console.warn('Lecture impossible :', err));
+    musicOn = true;
     musicBtn.textContent = '🔇 Stop';
     musicBtn.style.background = 'rgba(232,255,71,0.2)';
   } else {
     audio.pause();
+    musicOn = false;
     musicBtn.textContent = '🎵 Musique';
     musicBtn.style.background = 'rgba(232,255,71,0.1)';
   }
 };
 document.body.appendChild(musicBtn);
-  const nextBtn = document.createElement('button');
+
+// ✅ Bouton Next — utilise musicOn correctement
+const nextBtn = document.createElement('button');
 nextBtn.textContent = '⏭ Next';
 nextBtn.style.cssText = `
   position: fixed; bottom: 56px; right: 16px;
@@ -354,9 +386,14 @@ nextBtn.style.cssText = `
 nextBtn.onclick = () => {
   trackIndex = (trackIndex + 1) % tracks.length;
   audio.src = tracks[trackIndex];
-  if (musicOn) audio.play();
+  audio.load();
+  if (musicOn) {
+    audio.play().catch(err => console.warn('Lecture impossible :', err));
+  }
 };
 document.body.appendChild(nextBtn);
+
+// ─── Lancement ─────────────────────────────────────────────────
 newGame();
 </script>
 </body>
