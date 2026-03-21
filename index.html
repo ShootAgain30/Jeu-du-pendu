@@ -298,81 +298,123 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
 document.getElementById('install-btn').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; };
 // Musique lo-fi générée
+// Musique Star Wars lo-fi
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 let musicOn = false;
-let nodes = [];
+let schedulerTimer = null;
+
+// Notes du thème principal Star Wars (fréquences en Hz)
+const SW_MELODY = [
+  {f:261.6,d:0.4},{f:261.6,d:0.4},{f:261.6,d:0.4},
+  {f:349.2,d:1.0},{f:523.3,d:1.0},
+  {f:493.9,d:0.4},{f:466.2,d:0.4},{f:440.0,d:0.4},{f:415.3,d:0.4},
+  {f:523.3,d:1.0},{f:349.2,d:0.8},
+  {f:493.9,d:0.4},{f:466.2,d:0.4},{f:440.0,d:0.4},{f:415.3,d:0.4},
+  {f:523.3,d:1.2},{f:349.2,d:0.8},
+  {f:493.9,d:0.4},{f:466.2,d:0.4},{f:493.9,d:0.4},{f:440.0,d:0.4},
+  {f:392.0,d:1.0},{f:392.0,d:0.4},{f:392.0,d:0.4},
+  {f:523.3,d:1.0},{f:659.3,d:1.0},
+  {f:587.3,d:0.4},{f:554.4,d:0.4},{f:523.3,d:0.4},{f:493.9,d:0.4},
+  {f:659.3,d:1.0},{f:466.2,d:0.8},
+  {f:622.3,d:0.4},{f:587.3,d:0.4},{f:554.4,d:0.4},{f:523.3,d:0.4},
+  {f:659.3,d:1.2},{f:349.2,d:0.8},
+];
+
+const SW_BASS = [
+  {f:65.4, d:1.2},{f:87.3, d:1.2},{f:98.0, d:1.2},{f:87.3, d:1.2},
+  {f:65.4, d:1.2},{f:73.4, d:1.2},{f:87.3, d:1.2},{f:65.4, d:1.2},
+];
+
+function createReverb(ctx) {
+  const convolver = ctx.createConvolver();
+  const length = ctx.sampleRate * 2;
+  const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = impulse.getChannelData(c);
+    for (let i = 0; i < length; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+  }
+  convolver.buffer = impulse;
+  return convolver;
+}
+
+function playNote(ctx, freq, startTime, duration, gainVal, reverb, type='sine') {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1200;
+  osc.type = type;
+  osc.frequency.value = freq * 0.5; // octave basse lo-fi
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.9);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(reverb);
+  reverb.connect(ctx.destination);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+function playVinylNoise(ctx) {
+  const bufferSize = ctx.sampleRate * 3;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.008;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer; src.loop = true;
+  const f = ctx.createBiquadFilter();
+  f.type = 'bandpass'; f.frequency.value = 1000; f.Q.value = 0.5;
+  const g = ctx.createGain(); g.gain.value = 0.15;
+  src.connect(f); f.connect(g); g.connect(ctx.destination);
+  src.start();
+  return src;
+}
 
 function startLofi() {
   if (!audioCtx) audioCtx = new AudioContext();
-  nodes.forEach(n => { try { n.stop(); } catch(e){} });
-  nodes = [];
+  if (audioCtx.state === 'suspended') audioCtx.resume();
 
-  // Pluie douce en fond
-  const bufferSize = audioCtx.sampleRate * 2;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.015;
-  const rain = audioCtx.createBufferSource();
-  rain.buffer = buffer; rain.loop = true;
-  const rainFilter = audioCtx.createBiquadFilter();
-  rainFilter.type = 'lowpass'; rainFilter.frequency.value = 400;
-  const rainGain = audioCtx.createGain(); rainGain.gain.value = 0.3;
-  rain.connect(rainFilter); rainFilter.connect(rainGain); rainGain.connect(audioCtx.destination);
-  rain.start(); nodes.push(rain);
+  const reverb = createReverb(audioCtx);
+  const reverbGain = audioCtx.createGain();
+  reverbGain.gain.value = 0.3;
+  reverb.connect(reverbGain);
+  reverbGain.connect(audioCtx.destination);
 
-  // Mélodie lo-fi douce
-  const notes = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3];
-  const pattern = [0,2,4,7,4,2,0,5,3,1,5,3,2,4,6,4];
-  let time = audioCtx.currentTime + 0.5;
+  const vinyl = playVinylNoise(audioCtx);
 
-  function playMelody() {
-    pattern.forEach((noteIdx, i) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass'; filter.frequency.value = 800;
-      osc.type = 'sine';
-      osc.frequency.value = notes[noteIdx] * 0.5;
-      const t = time + i * 0.55;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-      osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(t); osc.stop(t + 0.6);
-    });
-    time += pattern.length * 0.55;
-  }
-
-  playMelody();
-  const interval = setInterval(() => {
-    if (!musicOn) { clearInterval(interval); return; }
-    playMelody();
-  }, pattern.length * 550);
-
-  // Basse douce
-  function playBass() {
+  function scheduleMelody() {
     if (!musicOn) return;
-    const bassNotes = [130.8, 146.8, 164.8, 174.6];
-    bassNotes.forEach((freq, i) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine'; osc.frequency.value = freq;
-      const t = audioCtx.currentTime + i * 1.2;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.08, t + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(t); osc.stop(t + 1.2);
+    let t = audioCtx.currentTime + 0.1;
+    SW_MELODY.forEach(note => {
+      playNote(audioCtx, note.f, t, note.d, 0.13, reverb, 'sine');
+      // Harmonique douce
+      playNote(audioCtx, note.f * 1.5, t, note.d, 0.04, reverb, 'sine');
+      t += note.d * 0.9;
     });
-    setTimeout(playBass, bassNotes.length * 1200);
+    // Basse
+    let tb = audioCtx.currentTime + 0.1;
+    SW_BASS.forEach(note => {
+      playNote(audioCtx, note.f, tb, note.d, 0.1, reverb, 'triangle');
+      tb += note.d;
+    });
+    // Relancer après la durée totale
+    const totalDuration = SW_MELODY.reduce((s, n) => s + n.d * 0.9, 0) * 1000;
+    schedulerTimer = setTimeout(scheduleMelody, totalDuration - 200);
   }
-  playBass();
+
+  scheduleMelody();
+  audioCtx._vinyl = vinyl;
 }
 
 function stopLofi() {
-  nodes.forEach(n => { try { n.stop(); } catch(e){} });
-  nodes = [];
+  clearTimeout(schedulerTimer);
+  if (audioCtx && audioCtx._vinyl) {
+    try { audioCtx._vinyl.stop(); } catch(e){}
+  }
 }
 
 // Bouton musique
@@ -391,8 +433,15 @@ musicBtn.style.cssText = `
 `;
 musicBtn.onclick = () => {
   musicOn = !musicOn;
-  if (musicOn) { startLofi(); musicBtn.textContent = '🔇 Stop'; musicBtn.style.background = 'rgba(232,255,71,0.2)'; }
-  else { stopLofi(); musicBtn.textContent = '🎵 Musique'; musicBtn.style.background = 'rgba(232,255,71,0.1)'; }
+  if (musicOn) {
+    startLofi();
+    musicBtn.textContent = '🔇 Stop';
+    musicBtn.style.background = 'rgba(232,255,71,0.2)';
+  } else {
+    stopLofi();
+    musicBtn.textContent = '🎵 Musique';
+    musicBtn.style.background = 'rgba(232,255,71,0.1)';
+  }
 };
 document.body.appendChild(musicBtn);
 newGame();
