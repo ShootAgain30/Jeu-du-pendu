@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0c1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Le Pendu">
+<meta name="description" content="Jeu du Pendu — Devinez le mot avant qu'il ne soit trop tard">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Le Pendu&quot;,&quot;short_name&quot;:&quot;Pendu&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230f0c1a&quot;,&quot;theme_color&quot;:&quot;%230f0c1a&quot;}">
+<title>Le Pendu</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0c1a;
+  --bg2: #16112b;
+  --accent: #e8ff47;
+  --accent2: #ff4757;
+  --accent3: #48dbfb;
+  --text: #f0ebff;
+  --muted: rgba(240,235,255,0.35);
+  --card: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --glow: 0 0 40px rgba(232,255,71,0.15);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(232,255,71,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 100%, rgba(72,219,251,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,71,87,0.04) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0; opacity:0.4;
+}
+.app {
+  position: relative; z-index: 1;
+  height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 12px 8px;
+  max-width: 480px; margin: 0 auto;
+}
+.header {
+  width: 100%; display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 10px;
+}
+.game-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem; letter-spacing: 0.15em;
+  color: var(--accent);
+  text-shadow: 0 0 30px rgba(232,255,71,0.4); line-height: 1;
+}
+.score-badge { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.score-label { font-family: 'DM Mono', monospace; font-size: 0.55rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
+.score-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--accent3); letter-spacing: 0.1em; line-height: 1; }
+.category-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  padding: 5px 14px; border-radius: 100px;
+  font-family: 'DM Mono', monospace; font-size: 0.65rem;
+  color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
+}
+.cat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.gallows-wrap { width: 100%; display: flex; justify-content: center; margin-bottom: 6px; }
+#gallows-svg { width: 220px; height: 160px; }
+.attempts-bar { display: flex; gap: 6px; margin-bottom: 12px; }
+.attempt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); transition: all 0.3s; }
+.attempt-dot.used { background: rgba(255,255,255,0.1); box-shadow: none; }
+.word-display { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; min-height: 52px; align-items: center; }
+.letter-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.letter-char { font-family: 'DM Serif Display', serif; font-size: 1.8rem; line-height: 1; min-width: 28px; text-align: center; color: var(--text); transition: all 0.3s; transform-origin: bottom; }
+.letter-char.revealed { animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); color: var(--accent); }
+.letter-char.wrong { color: var(--accent2); animation: shake 0.4s ease; }
+@keyframes popIn { 0% { transform: scale(0) rotateX(90deg); opacity:0; } 100% { transform: scale(1) rotateX(0); opacity:1; } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.letter-line { width: 28px; height: 2px; background: rgba(255,255,255,0.2); border-radius: 1px; }
+.letter-line.revealed { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.hint-row { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 12px; text-align: center; min-height: 16px; }
+.keyboard { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.key-row { display: flex; justify-content: center; gap: 5px; }
+.key {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 0.8rem; font-weight: 500;
+  width: 34px; height: 40px; border-radius: 6px;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+}
+.key::after { content:''; position:absolute; inset:0; background: var(--accent); opacity:0; transition: opacity 0.1s; }
+.key:active::after { opacity: 0.15; }
+.key:not(.used):hover { border-color: rgba(232,255,71,0.4); color: var(--accent); transform: translateY(-1px); }
+.key.correct { background: rgba(232,255,71,0.12); border-color: var(--accent); color: var(--accent); cursor: default; }
+.key.wrong { background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.3); color: var(--accent2); cursor: default; opacity: 0.5; }
+.overlay {
+  position: fixed; inset:0;
+  background: rgba(15,12,26,0.92);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 50; gap: 20px; padding: 32px;
+  text-align: center; transition: opacity 0.4s;
+}
+.overlay.hidden { opacity:0; pointer-events:none; }
+.overlay-emoji { font-size: 4rem; animation: bounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes bounceIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+.overlay-title { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; letter-spacing: 0.1em; line-height: 1; }
+.overlay-title.win { color: var(--accent); text-shadow: 0 0 40px rgba(232,255,71,0.5); }
+.overlay-title.lose { color: var(--accent2); text-shadow: 0 0 40px rgba(255,71,87,0.5); }
+.overlay-word { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 1.5rem; color: var(--muted); }
+.overlay-word span { color: var(--text); font-style: normal; }
+.play-again-btn { background: var(--accent); color: var(--bg); border: none; padding: 14px 40px; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.15em; cursor: pointer; border-radius: 4px; transition: all 0.2s; box-shadow: 0 0 30px rgba(232,255,71,0.3); }
+.play-again-btn:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(232,255,71,0.5); }
+.install-banner { width: 100%; background: rgba(72,219,251,0.08); border: 1px solid rgba(72,219,251,0.2); border-radius: 8px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.install-text { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--accent3); letter-spacing: 0.08em; line-height: 1.5; }
+.install-btn { background: var(--accent3); color: var(--bg); border: none; padding: 7px 16px; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 0.1em; cursor: pointer; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+.install-banner.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="game-title">LE PENDU</div>
+    <div class="score-badge">
+      <span class="score-label">Score</span>
+      <span class="score-val" id="score">0</span>
+    </div>
+  </div>
+  <div class="category-pill">
+    <div class="cat-dot"></div>
+    <span id="category-label">Chargement…</span>
+  </div>
+  <div class="gallows-wrap">
+    <svg id="gallows-svg" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="20" y1="155" x2="200" y2="155" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+      <line x1="60" y1="155" x2="60" y2="10" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+      <line x1="60" y1="10" x2="140" y2="10" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+      <line x1="140" y1="10" x2="140" y2="30" stroke="rgba(255,255,255,0.15)" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3"/>
+      <circle id="p-head" cx="140" cy="44" r="14" stroke="#ff4757" stroke-width="2.5" opacity="0" style="transition:opacity 0.4s"/>
+      <line id="p-body" x1="140" y1="58" x2="140" y2="100" stroke="#ff4757" stroke-width="2.5" stroke-linecap="round" opacity="0" style="transition:opacity 0.4s"/>
+      <line id="p-larm" x1="140" y1="70" x2="118" y2="90" stroke="#ff4757" stroke-width="2.5" stroke-linecap="round" opacity="0" style="transition:opacity 0.4s"/>
+      <line id="p-rarm" x1="140" y1="70" x2="162" y2="90" stroke="#ff4757" stroke-width="2.5" stroke-linecap="round" opacity="0" style="transition:opacity 0.4s"/>
+      <line id="p-lleg" x1="140" y1="100" x2="118" y2="130" stroke="#ff4757" stroke-width="2.5" stroke-linecap="round" opacity="0" style="transition:opacity 0.4s"/>
+      <line id="p-rleg" x1="140" y1="100" x2="162" y2="130" stroke="#ff4757" stroke-width="2.5" stroke-linecap="round" opacity="0" style="transition:opacity 0.4s"/>
+    </svg>
+  </div>
+  <div class="attempts-bar" id="attempts-bar"></div>
+  <div class="word-display" id="word-display"></div>
+  <div class="hint-row" id="hint-row"></div>
+  <div class="keyboard" id="keyboard"></div>
+  <div class="install-banner hidden" id="install-banner">
+    <div class="install-text">INSTALLER L'APP<br>Jouer hors ligne, sans navigateur</div>
+    <button class="install-btn" id="install-btn">INSTALLER</button>
+  </div>
+</div>
+<div class="overlay hidden" id="overlay">
+  <div class="overlay-emoji" id="overlay-emoji"></div>
+  <div class="overlay-title" id="overlay-title"></div>
+  <div class="overlay-word" id="overlay-word"></div>
+  <button class="play-again-btn" onclick="newGame()">REJOUER</button>
+</div>
+<script>
+const WORDS = [
+  { word: "ELEPHANT",   cat: "Animaux",      hint: "Le plus grand mammifère terrestre" },
+  { word: "VOLCAN",     cat: "Nature",        hint: "Crache de la lave" },
+  { word: "GUITARE",    cat: "Musique",       hint: "Instrument à cordes pincées" },
+  { word: "PYRAMIDE",   cat: "Histoire",      hint: "Tombeau des pharaons" },
+  { word: "CHOCOLAT",   cat: "Nourriture",    hint: "Fait du cacao" },
+  { word: "DALMATIEN",  cat: "Animaux",       hint: "Chien tacheté de noir" },
+  { word: "FUSEE",      cat: "Espace",        hint: "Va dans les étoiles" },
+  { word: "CROCODILE",  cat: "Animaux",       hint: "Reptile des marais" },
+  { word: "PARACHUTE",  cat: "Sport",         hint: "Ralentit la chute" },
+  { word: "DIAMANT",    cat: "Minéraux",      hint: "La pierre la plus dure" },
+  { word: "AURORE",     cat: "Nature",        hint: "Lumières polaires colorées" },
+  { word: "VAMPIRE",    cat: "Fantastique",   hint: "Craint l'ail et le soleil" },
+  { word: "CERISIER",   cat: "Arbres",        hint: "Fleurit en rose au Japon" },
+  { word: "TORNADE",    cat: "Météo",         hint: "Colonne d'air en rotation" },
+  { word: "SORCIERE",   cat: "Fantastique",   hint: "Chevauche un balai" },
+  { word: "MANCHOT",    cat: "Animaux",       hint: "Pingouin qui ne vole pas" },
+  { word: "TAMBOUR",    cat: "Musique",       hint: "Instrument à percussion" },
+  { word: "REQUIN",     cat: "Animaux",       hint: "Prédateur des océans" },
+  { word: "CHATEAU",    cat: "Architecture",  hint: "Résidence médiévale fortifiée" },
+  { word: "DRAGON",     cat: "Fantastique",   hint: "Crache du feu et vole" },
+  { word: "GIRAFE",     cat: "Animaux",       hint: "A le cou le plus long" },
+];
+const KEYBOARD_ROWS = [
+  ['A','Z','E','R','T','Y','U','I','O','P'],
+  ['Q','S','D','F','G','H','J','K','L','M'],
+  ['W','X','C','V','B','N']
+];
+const BODY_PARTS = ['p-head','p-body','p-larm','p-rarm','p-lleg','p-rleg'];
+const MAX_ERRORS = 6;
+let state = { word:'', hint:'', category:'', guessed: new Set(), errors:0, score:0, gameOver:false };
+
+function newGame() {
+  const entry = WORDS[Math.floor(Math.random() * WORDS.length)];
+  state = { word: entry.word.toUpperCase(), hint: entry.hint, category: entry.cat, guessed: new Set(), errors: 0, score: state.score, gameOver: false };
+  document.getElementById('overlay').classList.add('hidden');
+  render();
+}
+
+function guess(letter) {
+  if (state.gameOver || state.guessed.has(letter)) return;
+  state.guessed.add(letter);
+  if (!state.word.includes(letter)) state.errors++;
+  const won = [...state.word].every(l => state.guessed.has(l));
+  const lost = state.errors >= MAX_ERRORS;
+  if (won) { state.score += Math.max(10, 50 - state.errors * 8); state.gameOver = true; setTimeout(() => showOverlay(true), 400); }
+  else if (lost) { state.gameOver = true; setTimeout(() => showOverlay(false), 400); }
+  render();
+}
+
+function showOverlay(won) {
+  document.getElementById('overlay-emoji').textContent = won ? '🎉' : '💀';
+  const title = document.getElementById('overlay-title');
+  title.textContent = won ? 'BRAVO !' : 'PERDU !';
+  title.className = 'overlay-title ' + (won ? 'win' : 'lose');
+  document.getElementById('overlay-word').innerHTML = won ? `Score : <span>+${Math.max(10, 50 - state.errors * 8)} pts</span>` : `Le mot était : <span>${state.word}</span>`;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function render() {
+  document.getElementById('category-label').textContent = state.category;
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('hint-row').textContent = state.errors >= 2 ? `💡 ${state.hint}` : '';
+  BODY_PARTS.forEach((id, i) => { document.getElementById(id).style.opacity = state.errors > i ? '1' : '0'; });
+  const bar = document.getElementById('attempts-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < MAX_ERRORS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'attempt-dot' + (i < state.errors ? ' used' : '');
+    bar.appendChild(dot);
+  }
+  const wordDiv = document.getElementById('word-display');
+  wordDiv.innerHTML = '';
+  [...state.word].forEach(letter => {
+    const slot = document.createElement('div'); slot.className = 'letter-slot';
+    const char = document.createElement('div'); char.className = 'letter-char';
+    if (state.guessed.has(letter)) { char.textContent = letter; char.classList.add('revealed'); }
+    else if (state.gameOver) { char.textContent = letter; char.classList.add('wrong'); }
+    else { char.textContent = '\u00A0'; }
+    const line = document.createElement('div');
+    line.className = 'letter-line' + (state.guessed.has(letter) ? ' revealed' : '');
+    slot.appendChild(char); slot.appendChild(line); wordDiv.appendChild(slot);
+  });
+  const kb = document.getElementById('keyboard'); kb.innerHTML = '';
+  KEYBOARD_ROWS.forEach(row => {
+    const rowDiv = document.createElement('div'); rowDiv.className = 'key-row';
+    row.forEach(letter => {
+      const btn = document.createElement('button'); btn.className = 'key'; btn.textContent = letter;
+      if (state.guessed.has(letter)) { btn.classList.add(state.word.includes(letter) ? 'correct' : 'wrong'); btn.disabled = true; }
+      else if (state.gameOver) { btn.disabled = true; }
+      else { btn.onclick = () => guess(letter); }
+      rowDiv.appendChild(btn);
+    });
+    kb.appendChild(rowDiv);
+  });
+}
+
+document.addEventListener('keydown', e => { const l = e.key.toUpperCase(); if (/^[A-Z]$/.test(l) && !state.gameOver) guess(l); });
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
+document.getElementById('install-btn').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; };
+
+newGame();
+</script>
+</body>
+</html>
