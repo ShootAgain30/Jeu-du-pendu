@@ -52,12 +52,14 @@ body::after {
   position: relative; z-index: 1;
   height: 100vh;
   display: flex; flex-direction: column; align-items: center;
-  padding: 16px 12px 8px;
+  padding: 10px 12px 6px;
   max-width: 480px; margin: 0 auto;
+  overflow: hidden;
 }
 .header {
   width: 100%; display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 10px;
+  justify-content: space-between; margin-bottom: 6px;
+  flex-shrink: 0;
 }
 .game-title {
   font-family: 'Bebas Neue', sans-serif;
@@ -71,17 +73,18 @@ body::after {
 .category-pill {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--card); border: 1px solid var(--border);
-  padding: 7px 18px; border-radius: 100px;
-  font-family: 'DM Mono', monospace; font-size: 1.35rem;
-  color: var(--text); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
+  padding: 5px 16px; border-radius: 100px;
+  font-family: 'DM Mono', monospace; font-size: 1.1rem;
+  color: var(--text); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;
+  flex-shrink: 0;
 }
 .cat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.gallows-wrap { width: 100%; display: flex; justify-content: center; margin-bottom: 6px; }
-#gallows-svg { width: 373px; height: 267px; max-width: 100%; }
-.attempts-bar { display: flex; gap: 6px; margin-bottom: 12px; }
+.gallows-wrap { width: 100%; display: flex; justify-content: center; margin-bottom: 4px; flex-shrink: 0; }
+#gallows-svg { width: 200px; height: 145px; max-width: 100%; }
+.attempts-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; }
 .attempt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); transition: all 0.3s; }
 .attempt-dot.used { background: rgba(255,255,255,0.1); box-shadow: none; }
-.word-display { display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center; margin-bottom: 16px; min-height: 52px; align-items: center; width: 100%; }
+.word-display { display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center; margin-bottom: 8px; min-height: 44px; align-items: center; width: 100%; flex-shrink: 0; }
 .word-display.medium { gap: 6px; }
 .word-display.long { gap: 4px; }
 .letter-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -96,8 +99,8 @@ body::after {
 .word-display.medium .letter-line { width: 22px; }
 .word-display.long   .letter-line { width: 17px; }
 .letter-line.revealed { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-.hint-row { font-family: 'DM Mono', monospace; font-size: 1.3rem; color: var(--accent3); letter-spacing: 0.08em; margin-bottom: 12px; text-align: center; min-height: 28px; font-weight: 500; }
-.keyboard { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.hint-row { font-family: 'DM Mono', monospace; font-size: 1.1rem; color: var(--accent3); letter-spacing: 0.08em; margin-bottom: 8px; text-align: center; min-height: 22px; font-weight: 500; flex-shrink: 0; }
+.keyboard { width: 100%; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
 
 .key-row { display: flex; justify-content: center; gap: 5px; }
 .key {
@@ -349,9 +352,4 @@ document.getElementById('install-btn').onclick = async () => {
   deferredPrompt = null;
 };
 
-// ─── Audio ─────────────────────────────────────────────────────
-const tracks = ['Foyer.mp3', 'K2000.mp3'];
-let trackIndex = 0;
-let musicOn = false;
-
-const audio = new A
+// ─── Lancement (garanti avant l'audio) ────────────────────
