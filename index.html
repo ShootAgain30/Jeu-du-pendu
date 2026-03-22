@@ -71,33 +71,40 @@ body::after {
 .category-pill {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--card); border: 1px solid var(--border);
-  padding: 5px 14px; border-radius: 100px;
-  font-family: 'DM Mono', monospace; font-size: 0.65rem;
-  color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
+  padding: 7px 18px; border-radius: 100px;
+  font-family: 'DM Mono', monospace; font-size: 1.35rem;
+  color: var(--text); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
 }
 .cat-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .gallows-wrap { width: 100%; display: flex; justify-content: center; margin-bottom: 6px; }
-#gallows-svg { width: 220px; height: 160px; }
+#gallows-svg { width: 373px; height: 267px; max-width: 100%; }
 .attempts-bar { display: flex; gap: 6px; margin-bottom: 12px; }
 .attempt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); transition: all 0.3s; }
 .attempt-dot.used { background: rgba(255,255,255,0.1); box-shadow: none; }
-.word-display { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; min-height: 52px; align-items: center; }
+.word-display { display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center; margin-bottom: 16px; min-height: 52px; align-items: center; width: 100%; }
+.word-display.medium { gap: 6px; }
+.word-display.long { gap: 4px; }
 .letter-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .letter-char { font-family: 'DM Serif Display', serif; font-size: 1.8rem; line-height: 1; min-width: 28px; text-align: center; color: var(--text); transition: all 0.3s; transform-origin: bottom; }
+.word-display.medium .letter-char { font-size: 1.4rem; min-width: 22px; }
+.word-display.long   .letter-char { font-size: 1.1rem; min-width: 17px; }
 .letter-char.revealed { animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); color: var(--accent); }
 .letter-char.wrong { color: var(--accent2); animation: shake 0.4s ease; }
 @keyframes popIn { 0% { transform: scale(0) rotateX(90deg); opacity:0; } 100% { transform: scale(1) rotateX(0); opacity:1; } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 .letter-line { width: 28px; height: 2px; background: rgba(255,255,255,0.2); border-radius: 1px; }
+.word-display.medium .letter-line { width: 22px; }
+.word-display.long   .letter-line { width: 17px; }
 .letter-line.revealed { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-.hint-row { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 12px; text-align: center; min-height: 16px; }
+.hint-row { font-family: 'DM Mono', monospace; font-size: 1.3rem; color: var(--accent3); letter-spacing: 0.08em; margin-bottom: 12px; text-align: center; min-height: 28px; font-weight: 500; }
 .keyboard { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+
 .key-row { display: flex; justify-content: center; gap: 5px; }
 .key {
   background: var(--card); border: 1px solid var(--border);
   color: var(--text); font-family: 'DM Mono', monospace;
   font-size: 0.8rem; font-weight: 500;
-  width: 34px; height: 40px; border-radius: 6px;
+  width: 35px; height: 41px; border-radius: 6px;
   cursor: pointer; transition: all 0.15s;
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
@@ -202,7 +209,7 @@ const WORDS = [
   { word: "PIZZA",      cat: "Nourriture",    hint: "Spécialité italienne ronde" },
   { word: "DAUPHIN",    cat: "Animaux",       hint: "Mammifère marin très intelligent" },
   { word: "CACTUS",     cat: "Nature",        hint: "Plante du désert avec des épines" },
-  { word: "ASTRONAUTE", cat: "Espace",        hint: "Voyage dans les étoiles" },
+  { word: "ASTRONAUTE", cat: "Espace",        hint: "Pilote une navette spatiale" },
   { word: "BOULANGER",  cat: "Métiers",       hint: "Fabrique le pain chaque matin" },
   { word: "CASCADE",    cat: "Nature",        hint: "Chute d'eau naturelle" },
   { word: "DETECTIVE",  cat: "Métiers",       hint: "Résout les mystères et enquêtes" },
@@ -229,8 +236,24 @@ const BODY_PARTS = ['p-head','p-body','p-larm','p-rarm','p-lleg','p-rleg'];
 const MAX_ERRORS = 6;
 let state = { word:'', hint:'', category:'', guessed: new Set(), errors:0, score:0, gameOver:false };
 
+// File mélangée : tous les mots passent une fois avant de recommencer
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+let wordQueue = [];
+
+function nextEntry() {
+  if (wordQueue.length === 0) wordQueue = shuffle(WORDS);
+  return wordQueue.shift();
+}
+
 function newGame() {
-  const entry = WORDS[Math.floor(Math.random() * WORDS.length)];
+  const entry = nextEntry();
   state = { word: entry.word.toUpperCase(), hint: entry.hint, category: entry.cat, guessed: new Set(), errors: 0, score: state.score, gameOver: false };
   document.getElementById('overlay').classList.add('hidden');
   render();
@@ -274,6 +297,8 @@ function render() {
   }
   const wordDiv = document.getElementById('word-display');
   wordDiv.innerHTML = '';
+  const len = state.word.length;
+  wordDiv.className = 'word-display' + (len >= 9 ? ' long' : len >= 7 ? ' medium' : '');
   [...state.word].forEach(letter => {
     const slot = document.createElement('div'); slot.className = 'letter-slot';
     const char = document.createElement('div'); char.className = 'letter-char';
@@ -327,74 +352,6 @@ document.getElementById('install-btn').onclick = async () => {
 // ─── Audio ─────────────────────────────────────────────────────
 const tracks = ['Foyer.mp3', 'K2000.mp3'];
 let trackIndex = 0;
-let musicOn = false; // ✅ variable déclarée
+let musicOn = false;
 
-const audio = new Audio(tracks[trackIndex]);
-
-// ✅ Un seul listener 'ended' : passe à la piste suivante
-audio.addEventListener('ended', () => {
-  trackIndex = (trackIndex + 1) % tracks.length;
-  audio.src = tracks[trackIndex];
-  audio.load();
-  if (musicOn) {
-    audio.play().catch(err => console.warn('Lecture impossible :', err));
-  }
-});
-
-// ✅ Bouton Musique
-const musicBtn = document.createElement('button');
-musicBtn.textContent = '🎵 Musique';
-musicBtn.style.cssText = `
-  position: fixed; bottom: 16px; right: 16px;
-  background: rgba(232,255,71,0.1);
-  border: 1px solid rgba(232,255,71,0.4);
-  color: #e8ff47;
-  font-family: 'DM Mono', monospace;
-  font-size: 0.7rem; letter-spacing: 0.1em;
-  padding: 8px 14px; border-radius: 100px;
-  cursor: pointer; z-index: 99;
-`;
-musicBtn.onclick = () => {
-  if (audio.paused) {
-    audio.play().catch(err => console.warn('Lecture impossible :', err));
-    musicOn = true;
-    musicBtn.textContent = '🔇 Stop';
-    musicBtn.style.background = 'rgba(232,255,71,0.2)';
-  } else {
-    audio.pause();
-    musicOn = false;
-    musicBtn.textContent = '🎵 Musique';
-    musicBtn.style.background = 'rgba(232,255,71,0.1)';
-  }
-};
-document.body.appendChild(musicBtn);
-
-// ✅ Bouton Next — utilise musicOn correctement
-const nextBtn = document.createElement('button');
-nextBtn.textContent = '⏭ Next';
-nextBtn.style.cssText = `
-  position: fixed; bottom: 56px; right: 16px;
-  background: rgba(232,255,71,0.1);
-  border: 1px solid rgba(232,255,71,0.4);
-  color: #e8ff47;
-  font-family: 'DM Mono', monospace;
-  font-size: 0.7rem; letter-spacing: 0.1em;
-  padding: 8px 14px; border-radius: 100px;
-  cursor: pointer; z-index: 99;
-  transition: all 0.2s;
-`;
-nextBtn.onclick = () => {
-  trackIndex = (trackIndex + 1) % tracks.length;
-  audio.src = tracks[trackIndex];
-  audio.load();
-  if (musicOn) {
-    audio.play().catch(err => console.warn('Lecture impossible :', err));
-  }
-};
-document.body.appendChild(nextBtn);
-
-// ─── Lancement ─────────────────────────────────────────────────
-newGame();
-</script>
-</body>
-</html>
+const audio = new A
